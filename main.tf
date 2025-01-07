@@ -5,7 +5,7 @@ terraform {
     }
     proxmox = {
       source  = "telmate/proxmox"
-      version = "3.0.1-rc3"
+      version = "3.0.1-rc6"
     }
   }
 }
@@ -14,6 +14,7 @@ provider "proxmox" {
   pm_api_url          = var.proxmox_api_url
   pm_api_token_id     = var.proxmox_token_id
   pm_api_token_secret = var.proxmox_token_secret
+  pm_tls_insecure     = true
 }
 
 variable "proxmox_api_url" {
@@ -270,18 +271,18 @@ resource "null_resource" "cloud_init_config_files" {
 resource "proxmox_vm_qemu" "root" {
   name = "coder-${data.coder_workspace_owner.me.name}-${lower(data.coder_workspace.me.name)}"
   desc = "Coder workspace for ${data.coder_workspace_owner.me.name} (${data.coder_workspace.me.name})"
-
+  agent = 1
   target_node = var.proxmox_target_node
   clone       = var.proxmox_clone_vm_name
   os_type     = "cloud-init"
   cores       = data.coder_parameter.cpu_cores.value
   sockets     = 1
   vcpus       = 0
-  cpu         = "host"
+  cpu_type    = "host"
   memory      = data.coder_parameter.memory.value
   scsihw      = "virtio-scsi-pci"
   cicustom    = "user=local:snippets/user_data_vm-coder-${data.coder_workspace_owner.me.name}-${lower(data.coder_workspace.me.name)}.yml"
-  ipconfig0   = "ip=dhcp,ip6=dhcp"
+  ipconfig0   = "ip=dhcp"
 
   disks {
     ide {
@@ -303,6 +304,7 @@ resource "proxmox_vm_qemu" "root" {
   }
 
   network {
+    id = 0
     model  = "virtio"
     bridge = "vmbr0"
   }
